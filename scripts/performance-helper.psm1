@@ -854,6 +854,103 @@ class Defaults {
     }
 }
 
+function Get-FullMatrixTestDefinition {
+    param([TestDefinition]$Test)
+
+    if ($Test.Variables.Count -lt 2) {
+        Write-Error "Must have at least 2 matrix variables"
+    }
+
+    $BaseVariable = $Test.Variable[0]
+
+    foreach ($BaseVarValue in $collection) {
+
+    }
+
+    for ($i = 0; $i -lt $Test.Variable.Count; $i++) {
+        $
+    }
+}
+
+function Get-MinimalTestDefinition {
+    param([TestDefinition]$Test)
+
+    [TestRunDefinition[]]$ToRunTests = @()
+
+    [hashtable]$DefaultVals = @{}
+    # Get all default variables
+    foreach ($Var in $Test.Variables) {
+        if ($Var.Local.Keys.Count -ne $Var.Remote.Keys.Count) {
+            Write-Error "Remote and local key lengths must be the same"
+        }
+        $DefaultVals.Add($Var.Name, [Defaults]::new($Var.Local[$Var.Default], $Var.Remote[$Var.Default], $Var.Default))
+    }
+
+    $LocalArgs = $Test.Local.Arguments.All
+    $RemoteArgs = $Test.Remote.Arguments.All
+
+    if ($Local) {
+        $LocalArgs += " " + $Test.Local.Arguments.Loopback
+        $RemoteArgs += " " + $Test.Remote.Arguments.Loopback
+    } else {
+        $LocalArgs += " " + $Test.Local.Arguments.Remote
+        $RemoteArgs += " " + $Test.Remote.Arguments.Remote
+    }
+
+    $DefaultLocalArgs = $LocalArgs
+    $DefaultRemoteArgs = $RemoteArgs
+
+    $VariableValues = @{}
+    foreach ($VarKey in $DefaultVals.Keys) {
+        $VariableValues.Add($VarKey, $DefaultVals[$VarKey].DefaultKey)
+        $DefaultLocalArgs += (" " + $DefaultVals[$VarKey].LocalValue)
+        $DefaultRemoteArgs += (" " + $DefaultVals[$VarKey].RemoteValue)
+    }
+
+    # Create the default test
+    $TestRunDef = [TestRunDefinition]::new($Test, $DefaultLocalArgs, $DefaultRemoteArgs, $VariableValues)
+    $ToRunTests += $TestRunDef
+
+    foreach ($Var in $Test.Variables) {
+        $LocalVarArgs = @{}
+        $RemoteVarArgs = @{}
+
+        $StateKeyList = @()
+
+        foreach ($Key in $Var.Local.Keys) {
+            $LocalVarArgs.Add($Key, $LocalArgs + " " + $Var.Local[$Key])
+            $RemoteVarArgs.Add($Key, $RemoteArgs + " " + $Var.Remote[$Key])
+            $StateKeyList += $Key
+        }
+
+        # Enumerate each variable, getting its value and the default
+        foreach ($Key in $DefaultVals.Keys) {
+            if ($Key -ne $Var.Name) {
+                foreach ($TestKey in $StateKeyList) {
+                    $KeyVal =$DefaultVals[$Key]
+                    $LocalVarArgs[$TestKey] += " $($KeyVal.LocalValue)"
+                    $RemoteVarArgs[$TestKey] += " $($KeyVal.RemoteValue)"
+                }
+            }
+        }
+
+        foreach ($Key in $StateKeyList) {
+            $VariableValues = @{}
+            foreach ($VarKey in $DefaultVals.Keys) {
+                $VariableValues.Add($VarKey, $DefaultVals[$VarKey].DefaultKey)
+            }
+            if ($VariableValues[$Var.Name] -eq $Key) {
+                continue
+            }
+            $VariableValues[$Var.Name] = $Key
+            $TestRunDef = [TestRunDefinition]::new($Test, $Var.Name, $Key, $LocalVarArgs[$Key], $RemoteVarArgs[$Key], $VariableValues)
+            $ToRunTests += $TestRunDef
+        }
+    }
+
+    return $ToRunTests
+}
+
 function Get-TestMatrix {
     param ([TestDefinition[]]$Tests, $RemotePlatform, $LocalPlatform)
 
@@ -866,75 +963,11 @@ function Get-TestMatrix {
             continue
         }
 
-        [hashtable]$DefaultVals = @{}
-        # Get all default variables
-        foreach ($Var in $Test.Variables) {
-            if ($Var.Local.Keys.Count -ne $Var.Remote.Keys.Count) {
-                Write-Error "Remote and local key lengths must be the same"
-            }
-            $DefaultVals.Add($Var.Name, [Defaults]::new($Var.Local[$Var.Default], $Var.Remote[$Var.Default], $Var.Default))
-        }
-
-        $LocalArgs = $Test.Local.Arguments.All
-        $RemoteArgs = $Test.Remote.Arguments.All
-
-        if ($Local) {
-            $LocalArgs += " " + $Test.Local.Arguments.Loopback
-            $RemoteArgs += " " + $Test.Remote.Arguments.Loopback
+        if ($Test.FullMatrix) {
+            Write-Error "Not yet supported"
         } else {
-            $LocalArgs += " " + $Test.Local.Arguments.Remote
-            $RemoteArgs += " " + $Test.Remote.Arguments.Remote
-        }
-
-        $DefaultLocalArgs = $LocalArgs
-        $DefaultRemoteArgs = $RemoteArgs
-
-        $VariableValues = @{}
-        foreach ($VarKey in $DefaultVals.Keys) {
-            $VariableValues.Add($VarKey, $DefaultVals[$VarKey].DefaultKey)
-            $DefaultLocalArgs += (" " + $DefaultVals[$VarKey].LocalValue)
-            $DefaultRemoteArgs += (" " + $DefaultVals[$VarKey].RemoteValue)
-        }
-
-        # Create the default test
-        $TestRunDef = [TestRunDefinition]::new($Test, $DefaultLocalArgs, $DefaultRemoteArgs, $VariableValues)
-        $ToRunTests += $TestRunDef
-
-        foreach ($Var in $Test.Variables) {
-            $LocalVarArgs = @{}
-            $RemoteVarArgs = @{}
-
-            $StateKeyList = @()
-
-            foreach ($Key in $Var.Local.Keys) {
-                $LocalVarArgs.Add($Key, $LocalArgs + " " + $Var.Local[$Key])
-                $RemoteVarArgs.Add($Key, $RemoteArgs + " " + $Var.Remote[$Key])
-                $StateKeyList += $Key
-            }
-
-            # Enumerate each variable, getting its value and the default
-            foreach ($Key in $DefaultVals.Keys) {
-                if ($Key -ne $Var.Name) {
-                    foreach ($TestKey in $StateKeyList) {
-                        $KeyVal =$DefaultVals[$Key]
-                        $LocalVarArgs[$TestKey] += " $($KeyVal.LocalValue)"
-                        $RemoteVarArgs[$TestKey] += " $($KeyVal.RemoteValue)"
-                    }
-                }
-            }
-
-            foreach ($Key in $StateKeyList) {
-                $VariableValues = @{}
-                foreach ($VarKey in $DefaultVals.Keys) {
-                    $VariableValues.Add($VarKey, $DefaultVals[$VarKey].DefaultKey)
-                }
-                if ($VariableValues[$Var.Name] -eq $Key) {
-                    continue
-                }
-                $VariableValues[$Var.Name] = $Key
-                $TestRunDef = [TestRunDefinition]::new($Test, $Var.Name, $Key, $LocalVarArgs[$Key], $RemoteVarArgs[$Key], $VariableValues)
-                $ToRunTests += $TestRunDef
-            }
+            $NewTests = Get-MinimalTestDefinition -Test $Test
+            $ToRunTests += $NewTests
         }
     }
 
@@ -972,6 +1005,7 @@ class TestDefinition {
     [string]$ResultsMatcher;
     [boolean]$AllowLoopback;
     [string]$Units;
+    [boolean]$FullMatrix
 
     [string]ToString() {
         $Platform = $this.Remote.Platform

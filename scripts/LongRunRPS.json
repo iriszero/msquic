@@ -1,0 +1,108 @@
+[
+    {
+        "TestName": "RPS",
+        "Remote": {
+            "Platform": "Windows",
+            "Tls": ["stub", "schannel", "openssl", "mitls"],
+            "Arch": ["x64", "x86", "arm", "arm64"],
+            "Exe": "quicperf",
+            "Arguments": {
+                "All": "-selfsign:1",
+                "Loopback": "",
+                "Remote": ""
+            }
+        },
+        "Local": {
+            "Platform": "Windows",
+            "Tls": ["stub", "schannel", "openssl", "mitls"],
+            "Arch": ["x64", "x86", "arm", "arm64"],
+            "Exe": "quicperf",
+            "Arguments": {
+                "All": "-test:RPS -target:$RemoteAddress",
+                "Loopback": "",
+                "Remote": ""
+            }
+        },
+        "Variables": [
+            {
+                "Name": "ConnectionCount",
+                "Local": {
+                    "100": "-conns:100",
+                    "200": "-conns:200",
+                    "300": "-conns:300",
+                    "400": "-conns:400",
+                    "500": "-conns:500",
+                    "750": "-conns:750",
+                    "1000": "-conns:1000",
+                    "1250": "-conns:1250",
+                    "1500": "-conns:1500",
+                    "1750": "-conns:1750",
+                    "2000": "-conns:2000",
+                    "2250": "-conns:2250",
+                    "2500": "-conns:2500",
+                    "2750": "-conns:2750",
+                    "3000": "-conns:3000"
+                },
+                "Remote": {
+                    "100": "",
+                    "200": "",
+                    "300": "",
+                    "400": "",
+                    "500": "",
+                    "750": "",
+                    "1000": "",
+                    "1250": "",
+                    "1500": "",
+                    "1750": "",
+                    "2000": "",
+                    "2250": "",
+                    "2500": "",
+                    "2750": "",
+                    "3000": ""
+                },
+                "Default": "1000"
+            },
+            {
+                "Name": "RequestSize",
+                "Local": {
+                    "0": "-request:0"
+                },
+                "Remote": {
+                    "0": ""
+                },
+
+                "Default": "0"
+            },
+            {
+                "Name": "ResponseSize",
+                "Local": {
+                    "0": "-response:0",
+                    "256": "-response:256",
+                    "512": "-response:512",
+                    "1024": "-response:1024",
+                    "2048": "-response:2048",
+                    "4096": "-response:4096",
+                    "8192": "-response:8192",
+                    "16384": "-response:16384"
+                },
+                "Remote": {
+                    "0": "",
+                    "256": "",
+                    "512": "",
+                    "1024": "",
+                    "2048": "",
+                    "4096": "",
+                    "8192": "",
+                    "16384": ""
+                },
+                "Default": "4096"
+            }
+        ],
+        "AllowLoopback": false,
+        "Iterations": 5,
+        "RemoteReadyMatcher": "Started!",
+        "ResultsMatcher": "Result: (.*) RPS",
+        "Units": "RPS",
+        "FullMatrix": true
+    }
+]
