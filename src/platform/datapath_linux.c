@@ -673,6 +673,7 @@ QuicDataPathPopulateTargetAddress(
         QUIC_DBG_ASSERT(sizeof(struct sockaddr_in) == AddrInfo->ai_addrlen);
         SockAddrIn = (struct sockaddr_in*)AddrInfo->ai_addr;
         Address->Ipv4 = *SockAddrIn;
+        Address->Ipv4.sin_family = QUIC_ADDRESS_FAMILY_INET;
         return;
     } else {
         QUIC_FRE_ASSERT(FALSE);
